@@ -1,0 +1,139 @@
+import random
+
+# Initialize deck
+suits = ['♠', '♣', '♥', '♦']
+ranks = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K']
+deck = [(rank, suit) for suit in suits for rank in ranks]
+random.shuffle(deck)
+
+# Initialize game board
+tableau = [[] for _ in range(7)]
+foundation = {suit: [] for suit in suits}
+stock = []
+waste = []
+
+# Deal cards to the tableau
+for i in range(7):
+    for j in range(i, 7):
+        tableau[j].append(deck.pop(0))
+
+# Function to display the game board
+def display_board():
+    print("Stock: [{0} cards]".format(len(stock)))
+    print("Waste: [{0}]".format(' '.join(card[0] + card[1] for card in waste)))
+    print("Foundations:")
+    for suit in suits:
+        print("{0}: [{1}]".format(suit, ' '.join(card[0] + card[1] for card in foundation[suit])))
+    print("Tableau:")
+    for i, pile in enumerate(tableau):
+        print("{0}: [{1}]".format(i+1, ' '.join(card[0] + card[1] for card in pile)))
+
+# Function to check if a move is valid
+def is_valid_move(card1, card2):
+    rank1, suit1 = card1
+    rank2, suit2 = card2
+    if suit1 in ['♠', '♣'] and suit2 in ['♠', '♣']:
+        return rank1 == ranks[ranks.index(rank2) - 1]
+    elif suit1 in ['♥', '♦'] and suit2 in ['♥', '♦']:
+        return rank1 == ranks[ranks.index(rank2) + 1]
+    return False
+
+# Function to check if the game is won
+def is_game_won():
+    for suit in suits:
+        if len(foundation[suit]) != 13:
+            return False
+    return True
+
+# Main game loop
+while True:
+    display_board()
+    
+    # Check if the game is won
+    if is_game_won():
+        print("Congratulations! You won the game!")
+        break
+    
+    command = input("Enter a command (H for help): ").strip().lower()
+    
+    if command == 'h':
+        print("Commands:")
+        print("H - Help")
+        print("Q - Quit")
+        print("M <source> <destination> - Move card(s)")
+        print("D - Draw card from stock")
+    
+    elif command == 'q':
+        break
+    
+    elif command.startswith('m'):
+        move = command.split()[1:]
+        
+        if len(move) != 2:
+            print("Invalid move command. Please try again.")
+            continue
+        
+        source = move[0]
+        destination = move[1]
+        
+        if source == 's':
+            if not stock:
+                print("No cards in the stock.")
+                continue
+            source_pile = stock
+        elif source == 'w':
+            if not waste:
+                print("No cards in the waste.")
+                continue
+            source_pile = waste
+        elif source.isdigit() and 1 <= int(source) <= 7:
+            source_pile = tableau[int(source) - 1]
+        else:
+            print("Invalid source pile. Please try again.")
+            continue
+        
+        if destination == 'f':
+            if not waste:
+                print("No card to move to the foundation.")
+                continue
+            card = waste[-1]
+            suit = card[1]
+            if foundation[suit]:
+                if not is_valid_move(foundation[suit][-1], card):
+                    print("Invalid move to foundation. Please try again.")
+                    continue
+            else:
+                if card[0] != 'A':
+                    print("Invalid move to foundation. Please try again.")
+                    continue
+            source_pile.remove(card)
+            foundation[suit].append(card)
+        elif destination.isdigit() and 1 <= int(destination) <= 7:
+            destination_pile = tableau[int(destination) - 1]
+            if not waste:
+                print("No card to move from waste.")
+                continue
+            card = waste[-1]
+            if destination_pile:
+                if not is_valid_move(destination_pile[-1], card):
+                    print("Invalid move to tableau. Please try again.")
+                    continue
+            else:
+                if card[0] != 'K':
+                    print("Invalid move to tableau. Please try again.")
+                    continue
+            source_pile.remove(card)
+            destination_pile.append(card)
+        else:
+            print("Invalid destination pile. Please try again.")
+            continue
+    
+    elif command == 'd':
+        if not stock:
+            print("No cards in the stock.")
+            continue
+        card = stock.pop()
+        waste.append(card)
+    
+    else:
+        print("Invalid command. Please try again.")
